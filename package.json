@@ -1,6 +1,6 @@
 {
   "name": "unimported",
-  "version": "1.19.0",
+  "version": "1.19.0-internal",
   "description": "Scans your nodejs project folder and shows obsolete files and modules",
   "main": "./dist/index.js",
   "bin": {
@@ -11,7 +11,7 @@
   "author": "Stephan Meijer <stephan@meijer.ws>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/smeijer/unimported.git"
+    "url": "git+https://github.com/gontovnik/unimported.git"
   },
   "scripts": {
     "build": "rimraf ./dist && tsc",
