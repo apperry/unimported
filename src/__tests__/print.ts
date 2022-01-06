@@ -21,7 +21,7 @@ describe('printResults', () => {
 
   let restore: any;
   beforeEach(() => {
-    const strippingConsole = createConsole({ stripAnsi: true });
+    const strippingConsole = createConsole({ stripAnsi: true } as any);
     restore = mockConsole(strippingConsole);
   });
   afterEach(() => {

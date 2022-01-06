@@ -348,7 +348,7 @@ export async function traverse(
           break;
       }
     }
-  } catch (e) {
+  } catch (e: any) {
     if (config.cacheId) {
       invalidateEntry(path);
       invalidateEntries<FileStats>((meta) => {

@@ -249,7 +249,7 @@ export async function main(args: CliArguments): Promise<void> {
       const { filePathMap } = config;
       normalizedFiles = normalizedFiles.map((p) => {
         return mapFilePath(context.cwd, p, filePathMap);
-      })
+      });
     }
 
     spinner.text = 'process results';
@@ -278,7 +278,7 @@ export async function main(args: CliArguments): Promise<void> {
     if (!result.clean) {
       process.exit(1);
     }
-  } catch (error) {
+  } catch (error: any) {
     // console.log is intercepted for output comparison, this helps debugging
     if (process.env.NODE_ENV === 'test') {
       console.log(error.message);
