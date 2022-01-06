@@ -27,6 +27,7 @@ import {
 } from './cache';
 import { log } from './log';
 import { presets } from './presets';
+import { mapFilePath } from './utils';
 
 export interface TsConfig {
   compilerOptions: CompilerOptions;
@@ -243,7 +244,13 @@ export async function main(args: CliArguments): Promise<void> {
       ignore: config.ignorePatterns,
     });
 
-    const normalizedFiles = files.map((path) => path.replace(/\\/g, '/'));
+    let normalizedFiles = files.map((path) => path.replace(/\\/g, '/'));
+    if (config.filePathMap) {
+      const { filePathMap } = config;
+      normalizedFiles = normalizedFiles.map((p) => {
+        return mapFilePath(context.cwd, p, filePathMap);
+      })
+    }
 
     spinner.text = 'process results';
     spinner.stop();

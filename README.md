@@ -122,6 +122,15 @@ You can also add an optional `moduleDirectory` option to your configuration file
 }
 ```
 
+**Symlink mapping**
+There is an optional `filePathMap` option to map symlinked real paths back to symlink paths.
+
+```json
+{
+  "filePathMap": {"../my-symlink-folder", "src/my-symlink-folder"}
+}
+```
+
 **Custom aliases**
 If you wish to use aliases to import your modules & these can't be imported
 directly (e.g. `tsconfig.json` in the case of Typescript or `jsconfig.json` if you have one), there is an option `aliases` to provide the correct path mapping:

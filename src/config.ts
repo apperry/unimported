@@ -41,6 +41,7 @@ export interface UnimportedConfig {
   rootDir?: string;
   extensions?: string[];
   aliases?: MapLike<string[]>;
+  filePathMap?: Record<string, string>;
 }
 
 type PresetParams = {
@@ -66,6 +67,7 @@ export interface Config {
   ignoreUnimported: string[];
   ignoreUnused: string[];
   moduleDirectory?: string[];
+  filePathMap?: Record<string, string>;
   rootDir?: string;
   extensions: string[];
 }
@@ -144,6 +146,7 @@ export async function getConfig(args?: CliArguments): Promise<Config> {
     ignoreUnused: configFile?.ignoreUnused ?? preset?.ignoreUnused ?? [],
     ignorePatterns: configFile?.ignorePatterns ?? preset?.ignorePatterns ?? [],
     moduleDirectory: configFile?.moduleDirectory ?? preset?.moduleDirectory,
+    filePathMap: configFile?.filePathMap ?? preset?.filePathMap,
     entryFiles: [],
     extensions: [],
   };
