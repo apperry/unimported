@@ -5,7 +5,7 @@ import readPkgUp from 'read-pkg-up';
 
 import path, { join } from 'path';
 import ora from 'ora';
-import { printResults } from './print';
+import { printDeleteResult, printResults } from './print';
 import * as meta from './meta';
 import { getResultObject, traverse, TraverseConfig } from './traverse';
 import chalk from 'chalk';
@@ -28,6 +28,7 @@ import {
 import { log } from './log';
 import { presets } from './presets';
 import { mapFilePath } from './utils';
+import { removeUnused } from './delete';
 
 export interface TsConfig {
   compilerOptions: CompilerOptions;
@@ -41,7 +42,7 @@ export interface PackageJson {
   name: string;
   version: string;
   main?: string;
-  source?: string;
+  source?: string | string[];
   dependencies?: { [name: string]: string };
   optionalDependencies?: { [name: string]: string };
   devDependencies?: { [name: string]: string };
@@ -66,6 +67,9 @@ export interface Context {
   config: Config;
   moduleDirectory: string[];
   cacheId?: string;
+  showUnusedFiles: boolean;
+  showUnusedDeps: boolean;
+  showUnresolvedImports: boolean;
 }
 
 const oraStub = {
@@ -144,10 +148,10 @@ export async function main(args: CliArguments): Promise<void> {
     const context: Context = {
       dependencies,
       peerDependencies,
-      config,
       moduleDirectory,
       ...args,
-      cwd,
+      config,
+      cwd: cwd.replace(/\\/g, '/'),
     };
 
     if (args.init) {
@@ -187,6 +191,8 @@ export async function main(args: CliArguments): Promise<void> {
         moduleDirectory,
         preset: config.preset,
         dependencies,
+        pathTransforms: config.pathTransforms,
+        root: context.cwd,
       };
 
       // we can't use the third argument here, to keep feeding to traverseResult
@@ -213,8 +219,8 @@ export async function main(args: CliArguments): Promise<void> {
       subResult.modules.forEach((module) => {
         traverseResult.modules.add(module);
       });
-      subResult.unresolved.forEach((unresolved) => {
-        traverseResult.unresolved.add(unresolved);
+      subResult.unresolved.forEach((unresolved, key) => {
+        traverseResult.unresolved.set(key, unresolved);
       });
 
       for (const [key, stat] of subResult.files) {
@@ -265,6 +271,16 @@ export async function main(args: CliArguments): Promise<void> {
       storeCache();
     }
 
+    if (args.fix) {
+      const deleteResult = await removeUnused(result, context);
+      if (deleteResult.error) {
+        console.log(chalk.redBright(`✕`) + ` ${deleteResult.error}`);
+        process.exit(1);
+      }
+      printDeleteResult(deleteResult);
+      process.exit(0);
+    }
+
     if (args.update) {
       await updateAllowLists(result, context);
       // doesn't make sense here to return a error code
@@ -278,23 +294,29 @@ export async function main(args: CliArguments): Promise<void> {
     if (!result.clean) {
       process.exit(1);
     }
-  } catch (error: any) {
+  } catch (error) {
+    spinner.stop();
+
     // console.log is intercepted for output comparison, this helps debugging
-    if (process.env.NODE_ENV === 'test') {
+    if (process.env.NODE_ENV === 'test' && error instanceof Error) {
       console.log(error.message);
     }
 
-    spinner.stop();
-    console.error(
-      chalk.redBright(
-        error.path ? `\nFailed parsing ${error.path}` : error.message,
-      ),
-    );
+    if (error instanceof InvalidCacheError) {
+      console.error(chalk.redBright(`\nFailed parsing ${error['path']}`));
+    } else if (error instanceof Error) {
+      console.error(chalk.redBright(error.message));
+    } else {
+      // Who knows what this is, hopefully the .toString() is meaningful
+      console.error(`Unexpected value thrown: ${error}`);
+    }
+
     process.exit(1);
   }
 }
 
 export interface CliArguments {
+  fix: boolean;
   flow: boolean;
   update: boolean;
   init: boolean;
@@ -304,6 +326,10 @@ export interface CliArguments {
   cwd?: string;
   showConfig: boolean;
   showPreset?: string;
+  config?: string;
+  showUnusedFiles: boolean;
+  showUnusedDeps: boolean;
+  showUnresolvedImports: boolean;
 }
 
 if (process.env.NODE_ENV !== 'test') {
@@ -325,6 +351,13 @@ if (process.env.NODE_ENV !== 'test') {
           describe:
             'Whether to use the cache. Disable the cache using --no-cache.',
           default: true,
+        });
+
+        yargs.option('fix', {
+          type: 'boolean',
+          describe:
+            'Removes unused files and dependencies. This is a destructive operation, use with caution.',
+          default: false,
         });
 
         yargs.option('clear-cache', {
@@ -363,6 +396,26 @@ if (process.env.NODE_ENV !== 'test') {
           alias: 'u',
           type: 'boolean',
           describe: 'Update the ignore-lists stored in .unimportedrc.json.',
+        });
+
+        yargs.option('config', {
+          type: 'string',
+          describe: 'The path to the config file.',
+        });
+
+        yargs.option('show-unused-files', {
+          type: 'boolean',
+          describe: 'formats and only prints unimported files',
+        });
+
+        yargs.option('show-unused-deps', {
+          type: 'boolean',
+          describe: 'formats and only prints unused dependencies',
+        });
+
+        yargs.option('show-unresolved-imports', {
+          type: 'boolean',
+          describe: 'formats and only prints unresolved imports',
         });
       },
       function (argv: Arguments<CliArguments>) {

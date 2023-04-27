@@ -50,6 +50,14 @@ Update, will write the current results to the ignore lists in `.unimportedrc.jso
 npx unimported --update
 ```
 
+### Fix
+
+Running with the `--fix` argument will automatically remove unimported files from your project. This is a destructive action, so make sure that any changes you find important, are committed to your repo.
+
+```shell
+npx unimported --fix
+```
+
 ### Flow Type
 
 By default, flow types are stripped from files containing the `@flow` pragma. When the `--flow` argument is provided, types will be stripped from all files, regardless of the pragma. This flag defaults to false, but when `flow-bin` is detected in one of the dependency lists in `package.json`.
@@ -57,6 +65,10 @@ By default, flow types are stripped from files containing the `@flow` pragma. Wh
 ```shell
 npx unimported --flow
 ```
+
+## CI Usage
+
+You can drop in `npx unimported` into your CI. It will fail if it finds any unimported files that are not explicitly set up in the `unimported` config file.
 
 ### Cache
 
@@ -66,7 +78,7 @@ Unimported uses a caching system to speed up recurring checks. This cache can be
 npx unimported --no-cache
 ```
 
-If you need to clear the cache, use `--clearCache`.
+If you need to clear the cache, use `--clear-cache`.
 
 ### Clear Cache
 
@@ -149,6 +161,19 @@ start looking for the aliases from:
 ```json
 {
   "rootDir": "./src"
+}
+```
+
+**Path transformations**
+If you wish to transform paths before module resolution, there is an option `pathTransforms` to specify regex search patterns and corresponding replacement values. Search patterns will be applied with the global flag and should **_not_** be enclosed by `/` characters. Replacement values support all special replacement patterns supported by [String.prototype.replaceAll()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replaceAll#specifying_a_string_as_a_parameter).
+
+Here is an example for transforming the extension for relative imports from ".js" to ".ts" (this is useful for TypeScript projects configured to output pure ESM).
+
+```json
+{
+  "pathTransforms": {
+    "(\\..+)\\.js$": "$1.ts"
+  }
 }
 ```
 
@@ -300,10 +325,24 @@ Please try [clearing the cache](#cache) if you have unexpected results, or keep 
 npx unimported --clear-cache
 ```
 
+### TypeScript declaration files
+
+If you import declaration (`.d.ts`) files in a TypeScript project you will need to add it as an extension to `.unimportedrc.json`. Otherwise you will get "unresolved imports" warnings for imported declaration files.
+
+```json
+{
+  "extensions": [".ts", ".d.ts"]
+}
+```
+
 ## See Also
 
+- [depcheck](https://www.npmjs.com/depcheck)
 - [unrequired](https://npmjs.com/unrequired)
 - [trucker](https://npmjs.com/trucker)
+- [ts-unused-exports](https://www.npmjs.com/ts-unused-exports)
+- [no-unused-export](https://www.npmjs.com/no-unused-export)
+- [ts-prune](https://www.npmjs.com/ts-prune)
 
 ## License
 
@@ -317,33 +356,60 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <table>
-  <tr>
-    <td align="center"><a href="https://github.com/smeijer"><img src="https://avatars1.githubusercontent.com/u/1196524?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Stephan Meijer</b></sub></a><br /><a href="#ideas-smeijer" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/smeijer/unimported/commits?author=smeijer" title="Code">💻</a> <a href="#infra-smeijer" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-smeijer" title="Maintenance">🚧</a></td>
-    <td align="center"><a href="https://in.linkedin.com/in/punit-makwana/"><img src="https://avatars1.githubusercontent.com/u/16760252?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Punit Makwana</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=punit2502" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/danew"><img src="https://avatars1.githubusercontent.com/u/5265684?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Dane Wilson</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=danew" title="Code">💻</a></td>
-    <td align="center"><a href="https://github.com/mpeyper"><img src="https://avatars.githubusercontent.com/u/23029903?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Michael Peyper</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=mpeyper" title="Tests">⚠️</a> <a href="https://github.com/smeijer/unimported/commits?author=mpeyper" title="Code">💻</a></td>
-    <td align="center"><a href="https://github.com/marcosvega91"><img src="https://avatars.githubusercontent.com/u/5365582?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Marco Moretti</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=marcosvega91" title="Tests">⚠️</a></td>
-    <td align="center"><a href="http://peter.hozak.info/"><img src="https://avatars.githubusercontent.com/u/1087670?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Peter Hozák</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=Aprillion" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://dev.to/jacobmgevans"><img src="https://avatars.githubusercontent.com/u/27247160?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jacob M-G Evans</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=JacobMGEvans" title="Tests">⚠️</a></td>
-  </tr>
-  <tr>
-    <td align="center"><a href="https://github.com/datner"><img src="https://avatars.githubusercontent.com/u/22598347?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Datner</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=datner" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://github.com/codyarose"><img src="https://avatars.githubusercontent.com/u/35306025?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Cody Rose</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=codyarose" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://ahmedeldessouki-a7488.firebaseapp.com/"><img src="https://avatars.githubusercontent.com/u/44158955?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Ahmed ElDessouki</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=AhmedEldessouki" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://www.linkedin.com/in/ypazevedo/"><img src="https://avatars.githubusercontent.com/u/56167866?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Yago Pereira Azevedo</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=YPAzevedo" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://github.com/juhanakristian"><img src="https://avatars.githubusercontent.com/u/544386?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Juhana Jauhiainen</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=juhanakristian" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://github.com/nobrayner"><img src="https://avatars.githubusercontent.com/u/40751395?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Braydon Hall</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=nobrayner" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://github.com/abeprincec"><img src="https://avatars.githubusercontent.com/u/16880975?v=4?s=100" width="100px;" alt=""/><br /><sub><b>abeprincec</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=abeprincec" title="Tests">⚠️</a></td>
-  </tr>
-  <tr>
-    <td align="center"><a href="http://www.code-root.com/"><img src="https://avatars.githubusercontent.com/u/57859?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Lucas Westermann</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=lswest" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=lswest" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://github.com/simonwinter"><img src="https://avatars.githubusercontent.com/u/1104537?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Simon Winter</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=simonwinter" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=simonwinter" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://github.com/stovmascript"><img src="https://avatars.githubusercontent.com/u/14262802?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Martin Šťovíček</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=stovmascript" title="Documentation">📖</a></td>
-    <td align="center"><a href="http://www.incaseofstairs.com/"><img src="https://avatars.githubusercontent.com/u/196390?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Kevin Decker</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=kpdecker" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=kpdecker" title="Tests">⚠️</a></td>
-    <td align="center"><a href="https://github.com/olidacombe"><img src="https://avatars.githubusercontent.com/u/1752435?v=4?s=100" width="100px;" alt=""/><br /><sub><b>olidacombe</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=olidacombe" title="Code">💻</a></td>
-    <td align="center"><a href="https://in.linkedin.com/in/punit-makwana/"><img src="https://avatars.githubusercontent.com/u/16760252?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Punit Makwana</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=punitcodes" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/kkpalanisamy"><img src="https://avatars.githubusercontent.com/u/8186979?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Palanisamy KK</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=kkpalanisamy" title="Documentation">📖</a></td>
-  </tr>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/smeijer"><img src="https://avatars1.githubusercontent.com/u/1196524?v=4?s=100" width="100px;" alt="Stephan Meijer"/><br /><sub><b>Stephan Meijer</b></sub></a><br /><a href="#ideas-smeijer" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/smeijer/unimported/commits?author=smeijer" title="Code">💻</a> <a href="#infra-smeijer" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-smeijer" title="Maintenance">🚧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://in.linkedin.com/in/punit-makwana/"><img src="https://avatars1.githubusercontent.com/u/16760252?v=4?s=100" width="100px;" alt="Punit Makwana"/><br /><sub><b>Punit Makwana</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=punit2502" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/danew"><img src="https://avatars1.githubusercontent.com/u/5265684?v=4?s=100" width="100px;" alt="Dane Wilson"/><br /><sub><b>Dane Wilson</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=danew" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mpeyper"><img src="https://avatars.githubusercontent.com/u/23029903?v=4?s=100" width="100px;" alt="Michael Peyper"/><br /><sub><b>Michael Peyper</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=mpeyper" title="Tests">⚠️</a> <a href="https://github.com/smeijer/unimported/commits?author=mpeyper" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/marcosvega91"><img src="https://avatars.githubusercontent.com/u/5365582?v=4?s=100" width="100px;" alt="Marco Moretti"/><br /><sub><b>Marco Moretti</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=marcosvega91" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://peter.hozak.info/"><img src="https://avatars.githubusercontent.com/u/1087670?v=4?s=100" width="100px;" alt="Peter Hozák"/><br /><sub><b>Peter Hozák</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=Aprillion" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://dev.to/jacobmgevans"><img src="https://avatars.githubusercontent.com/u/27247160?v=4?s=100" width="100px;" alt="Jacob M-G Evans"/><br /><sub><b>Jacob M-G Evans</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=JacobMGEvans" title="Tests">⚠️</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/datner"><img src="https://avatars.githubusercontent.com/u/22598347?v=4?s=100" width="100px;" alt="Datner"/><br /><sub><b>Datner</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=datner" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/codyarose"><img src="https://avatars.githubusercontent.com/u/35306025?v=4?s=100" width="100px;" alt="Cody Rose"/><br /><sub><b>Cody Rose</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=codyarose" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://ahmedeldessouki-a7488.firebaseapp.com/"><img src="https://avatars.githubusercontent.com/u/44158955?v=4?s=100" width="100px;" alt="Ahmed ElDessouki"/><br /><sub><b>Ahmed ElDessouki</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=AhmedEldessouki" title="Tests">⚠️</a> <a href="https://github.com/smeijer/unimported/commits?author=AhmedEldessouki" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.linkedin.com/in/ypazevedo/"><img src="https://avatars.githubusercontent.com/u/56167866?v=4?s=100" width="100px;" alt="Yago Pereira Azevedo"/><br /><sub><b>Yago Pereira Azevedo</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=YPAzevedo" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/juhanakristian"><img src="https://avatars.githubusercontent.com/u/544386?v=4?s=100" width="100px;" alt="Juhana Jauhiainen"/><br /><sub><b>Juhana Jauhiainen</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=juhanakristian" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/nobrayner"><img src="https://avatars.githubusercontent.com/u/40751395?v=4?s=100" width="100px;" alt="Braydon Hall"/><br /><sub><b>Braydon Hall</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=nobrayner" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/abeprincec"><img src="https://avatars.githubusercontent.com/u/16880975?v=4?s=100" width="100px;" alt="abeprincec"/><br /><sub><b>abeprincec</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=abeprincec" title="Tests">⚠️</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="http://www.code-root.com/"><img src="https://avatars.githubusercontent.com/u/57859?v=4?s=100" width="100px;" alt="Lucas Westermann"/><br /><sub><b>Lucas Westermann</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=lswest" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=lswest" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/simonwinter"><img src="https://avatars.githubusercontent.com/u/1104537?v=4?s=100" width="100px;" alt="Simon Winter"/><br /><sub><b>Simon Winter</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=simonwinter" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=simonwinter" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/stovmascript"><img src="https://avatars.githubusercontent.com/u/14262802?v=4?s=100" width="100px;" alt="Martin Šťovíček"/><br /><sub><b>Martin Šťovíček</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=stovmascript" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://www.incaseofstairs.com/"><img src="https://avatars.githubusercontent.com/u/196390?v=4?s=100" width="100px;" alt="Kevin Decker"/><br /><sub><b>Kevin Decker</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=kpdecker" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=kpdecker" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/olidacombe"><img src="https://avatars.githubusercontent.com/u/1752435?v=4?s=100" width="100px;" alt="olidacombe"/><br /><sub><b>olidacombe</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=olidacombe" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://in.linkedin.com/in/punit-makwana/"><img src="https://avatars.githubusercontent.com/u/16760252?v=4?s=100" width="100px;" alt="Punit Makwana"/><br /><sub><b>Punit Makwana</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=punitcodes" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/kkpalanisamy"><img src="https://avatars.githubusercontent.com/u/8186979?v=4?s=100" width="100px;" alt="Palanisamy KK"/><br /><sub><b>Palanisamy KK</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=kkpalanisamy" title="Documentation">📖</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://startup-cto.net/"><img src="https://avatars.githubusercontent.com/u/3396992?v=4?s=100" width="100px;" alt="Daniel Bartholomae"/><br /><sub><b>Daniel Bartholomae</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=dbartholomae" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://t.me/gontovnik"><img src="https://avatars.githubusercontent.com/u/3436659?v=4?s=100" width="100px;" alt="Danil Gontovnik"/><br /><sub><b>Danil Gontovnik</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=gontovnik" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jarjee"><img src="https://avatars.githubusercontent.com/u/3888305?v=4?s=100" width="100px;" alt="Nathan Smyth"/><br /><sub><b>Nathan Smyth</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=jarjee" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://petersieg.me/"><img src="https://avatars.githubusercontent.com/u/3128659?v=4?s=100" width="100px;" alt="Peter Sieg"/><br /><sub><b>Peter Sieg</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=chasingmaxwell" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=chasingmaxwell" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://notjosh.com/"><img src="https://avatars.githubusercontent.com/u/33126?v=4?s=100" width="100px;" alt="Joshua May"/><br /><sub><b>Joshua May</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=notjosh" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=notjosh" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/nweber-gh"><img src="https://avatars.githubusercontent.com/u/52676728?v=4?s=100" width="100px;" alt="Nathan Weber"/><br /><sub><b>Nathan Weber</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=nweber-gh" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://eatingdots.com"><img src="https://avatars.githubusercontent.com/u/1843792?v=4?s=100" width="100px;" alt="Wlad Paiva"/><br /><sub><b>Wlad Paiva</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=wladiston" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://medium.com/@tbhesswebber"><img src="https://avatars.githubusercontent.com/u/28069638?v=4?s=100" width="100px;" alt="Tanner B. Hess Webber"/><br /><sub><b>Tanner B. Hess Webber</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=Tbhesswebber" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://webutvikling.org/"><img src="https://avatars.githubusercontent.com/u/1502702?v=4?s=100" width="100px;" alt="Tomas Fagerbekk"/><br /><sub><b>Tomas Fagerbekk</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=tomfa" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/valeriobelli"><img src="https://avatars.githubusercontent.com/u/56547421?v=4?s=100" width="100px;" alt="Valerio Belli"/><br /><sub><b>Valerio Belli</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=valeriobelli" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://uloco.github.io/"><img src="https://avatars.githubusercontent.com/u/8818340?v=4?s=100" width="100px;" alt="Umut Topuzoğlu"/><br /><sub><b>Umut Topuzoğlu</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=uloco" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://recollectr.io/"><img src="https://avatars.githubusercontent.com/u/6835891?v=4?s=100" width="100px;" alt="slapbox"/><br /><sub><b>slapbox</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=Slapbox" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Michael-372"><img src="https://avatars.githubusercontent.com/u/5233503?v=4?s=100" width="100px;" alt="Michael"/><br /><sub><b>Michael</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=Michael-372" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/karlhorky"><img src="https://avatars.githubusercontent.com/u/1935696?v=4?s=100" width="100px;" alt="Karl Horky"/><br /><sub><b>Karl Horky</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=karlhorky" title="Documentation">📖</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://adityavandan.github.io/"><img src="https://avatars.githubusercontent.com/u/35309453?v=4?s=100" width="100px;" alt="Aditya Vandan Sharma"/><br /><sub><b>Aditya Vandan Sharma</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=AdityaVandan" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Dogdriip"><img src="https://avatars.githubusercontent.com/u/6940439?v=4?s=100" width="100px;" alt="Aru Hyunseung Jeon"/><br /><sub><b>Aru Hyunseung Jeon</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=Dogdriip" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://www.ericcornelissen.dev/"><img src="https://avatars.githubusercontent.com/u/3742559?v=4?s=100" width="100px;" alt="Eric Cornelissen"/><br /><sub><b>Eric Cornelissen</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=ericcornelissen" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/xibman"><img src="https://avatars.githubusercontent.com/u/623141?v=4?s=100" width="100px;" alt="Georget Julien"/><br /><sub><b>Georget Julien</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=xibman" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/yyamanoi1222"><img src="https://avatars.githubusercontent.com/u/17104096?v=4?s=100" width="100px;" alt="yu-yamanoi"/><br /><sub><b>yu-yamanoi</b></sub></a><br /><a href="https://github.com/smeijer/unimported/commits?author=yyamanoi1222" title="Code">💻</a> <a href="https://github.com/smeijer/unimported/commits?author=yyamanoi1222" title="Tests">⚠️</a></td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- markdownlint-restore -->

@@ -42,6 +42,7 @@ export interface UnimportedConfig {
   extensions?: string[];
   aliases?: MapLike<string[]>;
   filePathMap?: Record<string, string>;
+  pathTransforms?: MapLike<string>;
 }
 
 type PresetParams = {
@@ -70,6 +71,7 @@ export interface Config {
   filePathMap?: Record<string, string>;
   rootDir?: string;
   extensions: string[];
+  pathTransforms?: MapLike<string>;
 }
 
 export async function expandGlob(
@@ -128,7 +130,10 @@ export async function getConfig(args?: CliArguments): Promise<Config> {
     return cachedConfig;
   }
 
-  const configFile = await readJson<Partial<UnimportedConfig>>(CONFIG_FILE);
+  const configFile = await readJson<Partial<UnimportedConfig>>(
+    args?.config || CONFIG_FILE,
+  );
+
   const unimportedPkg = await readPkgUp({ cwd: __dirname });
 
   const preset = await getPreset(configFile?.preset);
@@ -149,6 +154,7 @@ export async function getConfig(args?: CliArguments): Promise<Config> {
     filePathMap: configFile?.filePathMap ?? preset?.filePathMap,
     entryFiles: [],
     extensions: [],
+    pathTransforms: configFile?.pathTransforms ?? preset?.pathTransforms,
   };
 
   const aliases = configFile?.aliases ?? preset?.aliases ?? {};

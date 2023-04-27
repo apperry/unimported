@@ -32,6 +32,7 @@ function getCache(identity: string) {
   caches[identity] = fileEntryCache.create(
     identity,
     path.resolve(process.cwd(), './node_modules/.cache/unimported'),
+    true,
   );
 
   return caches[identity];
@@ -56,6 +57,10 @@ export class InvalidCacheError extends Error {
     super(message);
     this.name = 'InvalidCacheError';
     this.path = path;
+  }
+
+  static wrap(e: Error, path: string): InvalidCacheError {
+    return new InvalidCacheError(e.message, path);
   }
 }
 

@@ -2,6 +2,7 @@ import termSize from 'term-size';
 import chalk from 'chalk';
 import { Context } from './index';
 import { ProcessedResult } from './process';
+import { DeleteResult } from './delete';
 
 const { columns } = termSize();
 
@@ -11,12 +12,11 @@ export function formatList(caption: string, records: string[]): string {
 
   const lines = [
     chalk.grey('─'.repeat(gutterWidth + 1) + '┬' + '─'.repeat(colWidth)),
-    chalk.grey(' '.repeat(gutterWidth + 1) + '│ ') + chalk.whiteBright(caption),
+    chalk.grey(' '.repeat(gutterWidth + 1) + '│ ') + caption,
     chalk.grey('─'.repeat(gutterWidth + 1) + '┼' + '─'.repeat(colWidth)),
     ...records.map(
       (file, idx) =>
-        chalk.grey(`${idx + 1}`.padStart(gutterWidth, ' ') + ' │ ') +
-        chalk.white(file),
+        chalk.grey(`${idx + 1}`.padStart(gutterWidth, ' ') + ' │ ') + file,
     ),
     chalk.grey('─'.repeat(gutterWidth + 1) + '┴' + '─'.repeat(colWidth)),
   ];
@@ -26,7 +26,11 @@ export function formatList(caption: string, records: string[]): string {
 
 export function formatMetaTable(
   caption: string,
-  data: { unresolved: string[]; unimported: string[]; unused: string[] },
+  data: {
+    unresolved: [string, string[]][];
+    unimported: string[];
+    unused: string[];
+  },
   context: Context,
 ): string {
   const entryFiles = context.config.entryFiles;
@@ -61,15 +65,59 @@ export function formatMetaTable(
   return `\n${lines.join('\n')}\n`;
 }
 
+export function printDeleteResult({
+  removedDeps,
+  deletedFiles,
+}: DeleteResult): void {
+  if (removedDeps.length === 0 && deletedFiles.length === 0) {
+    console.log(
+      chalk.greenBright(`✓`) + ' There are no unused files or dependencies.',
+    );
+    return;
+  }
+  if (removedDeps.length === 0) {
+    console.log(chalk.greenBright(`✓`) + ' There are no unused dependencies.');
+    console.log(
+      formatList(
+        chalk.redBright(`${deletedFiles.length} unused files removed`),
+        deletedFiles,
+      ),
+    );
+    return;
+  }
+  if (deletedFiles.length === 0) {
+    console.log(chalk.greenBright(`✓`) + ' There are no unused files.');
+    console.log(
+      formatList(
+        chalk.redBright(`${removedDeps.length} unused dependencies removed`),
+        removedDeps,
+      ),
+    );
+    return;
+  }
+  console.log(
+    formatList(
+      chalk.redBright(`${removedDeps.length} unused dependencies removed`),
+      removedDeps,
+    ),
+  );
+  console.log(
+    formatList(
+      chalk.redBright(`${deletedFiles.length} unused files removed`),
+      deletedFiles,
+    ),
+  );
+}
+
 export function printResults(result: ProcessedResult, context: Context): void {
   if (result.clean) {
     console.log(
-      chalk.greenBright(`✓`) +
-        chalk.white(" There don't seem to be any unimported files."),
+      chalk.greenBright(`✓`) + " There don't seem to be any unimported files.",
     );
     return;
   }
 
+  const { showUnresolved, showUnused, showUnimported } = chooseResults(context);
   const { unresolved, unused, unimported } = result;
 
   // render
@@ -81,16 +129,18 @@ export function printResults(result: ProcessedResult, context: Context): void {
     ),
   );
 
-  if (unresolved.length > 0) {
+  if (showUnresolved && unresolved.length > 0) {
     console.log(
       formatList(
         chalk.redBright(`${unresolved.length} unresolved imports`),
-        unresolved,
+        unresolved.map(([item, sources]) => {
+          return `${item} ${chalk.gray(`at ${sources.join(', ')}`)}`;
+        }),
       ),
     );
   }
 
-  if (unused.length > 0) {
+  if (showUnused && unused.length > 0) {
     console.log(
       formatList(
         chalk.blueBright(`${unused.length} unused dependencies`),
@@ -99,7 +149,7 @@ export function printResults(result: ProcessedResult, context: Context): void {
     );
   }
 
-  if (unimported.length > 0) {
+  if (showUnimported && unimported.length > 0) {
     console.log(
       formatList(
         chalk.cyanBright(`${unimported.length} unimported files`),
@@ -113,4 +163,24 @@ export function printResults(result: ProcessedResult, context: Context): void {
       'npx unimported -u',
     )} to update ignore lists`,
   );
+}
+
+function chooseResults(context: Context) {
+  const { showUnresolvedImports, showUnusedDeps, showUnusedFiles } = context;
+  const showAllResults =
+    // when all three flags are used
+    (showUnresolvedImports && showUnusedDeps && showUnusedFiles) ||
+    // when none flag is used
+    (!showUnresolvedImports && !showUnusedDeps && !showUnusedFiles);
+
+  const showUnresolved = showUnresolvedImports || showAllResults;
+  const showUnused = showUnusedDeps || showAllResults;
+  const showUnimported = showUnusedFiles || showAllResults;
+
+  return {
+    showAllResults,
+    showUnresolved,
+    showUnused,
+    showUnimported,
+  };
 }

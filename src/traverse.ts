@@ -1,19 +1,23 @@
-import { dirname, extname } from 'path';
+import { dirname, extname, relative } from 'path';
 
 import {
   AST_NODE_TYPES,
   parse as parseEstree,
-  TSESTree,
+  simpleTraverse,
 } from '@typescript-eslint/typescript-estree';
 import * as fs from './fs';
-import Traverser from 'eslint/lib/shared/traverser';
 import type {
   Identifier,
   Literal,
-} from '@typescript-eslint/types/dist/ast-spec';
+} from '@typescript-eslint/types/dist/generated/ast-spec';
 import resolve from 'resolve';
 import removeFlowTypes from 'flow-remove-types';
-import { invalidateEntries, invalidateEntry, resolveEntry } from './cache';
+import {
+  invalidateEntries,
+  invalidateEntry,
+  InvalidCacheError,
+  resolveEntry,
+} from './cache';
 import { log } from './log';
 import { MapLike } from 'typescript';
 
@@ -25,7 +29,7 @@ export interface FileStats {
 }
 
 export interface TraverseResult {
-  unresolved: Set<string>;
+  unresolved: Map<string, string[]>;
   files: Map<string, FileStats>;
   modules: Set<string>;
 }
@@ -52,6 +56,16 @@ function getDependencyName(
   return null;
 }
 
+function transformPath(rawPath: string, config: TraverseConfig): string {
+  let path = rawPath;
+  if (config.pathTransforms) {
+    for (const [search, replace] of Object.entries(config.pathTransforms)) {
+      path = path.replace(new RegExp(search, 'g'), replace);
+    }
+  }
+  return path;
+}
+
 export type ResolvedResult =
   | {
       type: 'node_module';
@@ -68,10 +82,11 @@ export type ResolvedResult =
     };
 
 export function resolveImport(
-  path: string,
+  rawPath: string,
   cwd: string,
   config: TraverseConfig,
 ): ResolvedResult {
+  let path = transformPath(rawPath, config);
   const dependencyName = getDependencyName(path, config);
 
   if (dependencyName) {
@@ -146,14 +161,14 @@ export function resolveImport(
 }
 
 const VueScriptRegExp = new RegExp(
-  '<script(?:(\\s?(?<key>lang|setup|src))(?:=[\'"](?<value>.+)[\'"])?)?\\s?\\/?>',
+  '<script(?:(\\s?(?<key>lang|setup|src))(?:=[\'"](?<value>.+)[\'"])?)*\\s?\\/?>',
   'i',
 );
 
 function extractFromScriptTag(code: string) {
   const lines = code.split('\n');
-  let start = -1;
-  let end = -1;
+  const start: number[] = [];
+  const end: number[] = [];
 
   // walk the code from start to end to find the first <script> tag on it's own line
   for (let idx = 0; idx < lines.length; idx++) {
@@ -166,20 +181,31 @@ function extractFromScriptTag(code: string) {
       return `import '${matches.groups?.value.trim()}';`;
     }
 
-    start = idx;
-    break;
+    start.push(idx);
+
+    if (start.length === 2) {
+      break;
+    }
   }
 
   // walk the code in reverse to find the last </script> tag on it's own line
   for (let idx = lines.length - 1; idx >= 0; idx--) {
     if (lines[idx].trim() === '</script>') {
-      end = idx;
+      end.push(idx);
+    }
+    if (end.length === 2) {
       break;
     }
   }
 
-  const str =
-    start > -1 && end > -1 ? lines.slice(start + 1, end).join('\n') : '';
+  let str = '';
+
+  if (start.length > 0 && end.length > 0) {
+    const endReversed = end.reverse();
+    start.forEach((value, index) => {
+      str += lines.slice(value + 1, endReversed[index]).join('\n');
+    });
+  }
 
   return str;
 }
@@ -221,25 +247,25 @@ async function parse(path: string, config: TraverseConfig): Promise<FileStats> {
     jsx: stats.extname !== '.ts',
   });
 
-  Traverser.traverse(ast, {
-    enter(node: TSESTree.Node) {
-      let target;
+  simpleTraverse(ast, {
+    enter(node) {
+      let target: string | undefined;
 
       switch (node.type) {
         // import x from './x';
         case AST_NODE_TYPES.ImportDeclaration:
-          if (!node.source || !(node.source as Literal).value) {
+          if (!node.source.value) {
             break;
           }
-          target = (node.source as Literal).value as string;
+          target = node.source.value;
           break;
 
         // export { x } from './x';
         case AST_NODE_TYPES.ExportNamedDeclaration:
-          if (!node.source || !(node.source as Literal).value) {
+          if (!node.source?.value) {
             break;
           }
-          target = (node.source as Literal).value as string;
+          target = node.source.value;
           break;
 
         // export * from './x';
@@ -248,7 +274,7 @@ async function parse(path: string, config: TraverseConfig): Promise<FileStats> {
             break;
           }
 
-          target = (node.source as Literal).value as string;
+          target = node.source.value;
           break;
 
         // import('.x') || await import('.x')
@@ -264,7 +290,7 @@ async function parse(path: string, config: TraverseConfig): Promise<FileStats> {
               target = source.quasis[0].value.cooked;
             }
           } else {
-            target = (source as Literal).value;
+            target = (source as Literal).value as string;
           }
           break;
 
@@ -274,7 +300,19 @@ async function parse(path: string, config: TraverseConfig): Promise<FileStats> {
             break;
           }
 
-          target = (node.arguments[0] as Literal).value;
+          const [argument] = node.arguments;
+
+          if (argument.type === 'TemplateLiteral') {
+            // Allow for constant template literals, require(`.x`)
+            if (
+              argument.expressions.length === 0 &&
+              argument.quasis.length === 1
+            ) {
+              target = argument.quasis[0].value.cooked;
+            }
+          } else {
+            target = (argument as Literal).value as string;
+          }
           break;
         }
       }
@@ -290,7 +328,7 @@ async function parse(path: string, config: TraverseConfig): Promise<FileStats> {
 }
 
 export const getResultObject = () => ({
-  unresolved: new Set<string>(),
+  unresolved: new Map<string, string[]>(),
   modules: new Set<string>(),
   files: new Map<string, FileStats>(),
 });
@@ -303,6 +341,8 @@ export interface TraverseConfig {
   flow?: boolean;
   preset?: string;
   dependencies: MapLike<string>;
+  pathTransforms?: MapLike<string>;
+  root: string;
 }
 
 export async function traverse(
@@ -315,6 +355,8 @@ export async function traverse(
     return result;
   }
 
+  path = path.replace(/\\/g, '/');
+
   // be sure to only process each file once, and not end up in recursion troubles
   if (result.files.has(path)) {
     return result;
@@ -325,10 +367,12 @@ export async function traverse(
     return result;
   }
 
-  let parseResult;
+  let parseResult: FileStats;
   try {
+    const generator = () => parse(String(path), config);
+
     parseResult = config.cacheId
-      ? await resolveEntry(path, () => parse(path, config), config.cacheId)
+      ? await resolveEntry(path, generator, config.cacheId)
       : await parse(path, config);
     result.files.set(path, parseResult);
 
@@ -338,7 +382,10 @@ export async function traverse(
           result.modules.add(file.name);
           break;
         case 'unresolved':
-          result.unresolved.add(file.path);
+          const current = result.unresolved.get(file.path) || [];
+          const path = relative(config.root, parseResult.path);
+          const next = current.includes(path) ? current : [...current, path];
+          result.unresolved.set(file.path, next);
           break;
         case 'source_file':
           if (result.files.has(file.path)) {
@@ -348,7 +395,7 @@ export async function traverse(
           break;
       }
     }
-  } catch (e: any) {
+  } catch (error) {
     if (config.cacheId) {
       invalidateEntry(path);
       invalidateEntries<FileStats>((meta) => {
@@ -357,10 +404,11 @@ export async function traverse(
       });
     }
 
-    if (!e.path) {
-      e.path = path;
+    if (error instanceof Error && !(error instanceof InvalidCacheError)) {
+      throw InvalidCacheError.wrap(error, path);
     }
-    throw e;
+
+    throw error;
   }
 
   return result;
