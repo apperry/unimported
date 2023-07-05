@@ -27,6 +27,7 @@ export interface UnimportedConfig {
     | string
     | {
         file: string;
+        ignore?: string | string[];
         label?: string;
         aliases?: MapLike<string[]>;
         extensions?: string[];
@@ -40,6 +41,7 @@ export interface UnimportedConfig {
   moduleDirectory?: string[];
   rootDir?: string;
   extensions?: string[];
+  assetExtensions?: string[];
   aliases?: MapLike<string[]>;
   filePathMap?: Record<string, string>;
   pathTransforms?: MapLike<string>;
@@ -71,17 +73,22 @@ export interface Config {
   filePathMap?: Record<string, string>;
   rootDir?: string;
   extensions: string[];
+  assetExtensions: string[];
   pathTransforms?: MapLike<string>;
 }
 
 export async function expandGlob(
   patterns: string | string[],
+  options?: {
+    ignore?: string | string[];
+  },
 ): Promise<string[]> {
   const set = new Set<string>();
 
   for (const pattern of ensureArray(patterns)) {
     const paths = await globAsync(pattern, {
       realpath: false,
+      ignore: options?.ignore,
     });
 
     for (const path of paths) {
@@ -154,6 +161,7 @@ export async function getConfig(args?: CliArguments): Promise<Config> {
     filePathMap: configFile?.filePathMap ?? preset?.filePathMap,
     entryFiles: [],
     extensions: [],
+    assetExtensions: configFile?.assetExtensions ?? [],
     pathTransforms: configFile?.pathTransforms ?? preset?.pathTransforms,
   };
 
@@ -192,7 +200,9 @@ export async function getConfig(args?: CliArguments): Promise<Config> {
         ? [...entry.extend.extensions, ...extensions]
         : extensions;
 
-      for (const file of await expandGlob(entry.file)) {
+      for (const file of await expandGlob(entry.file, {
+        ignore: entry.ignore,
+      })) {
         config.entryFiles.push({
           file,
           label: entry.label,

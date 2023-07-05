@@ -380,6 +380,24 @@
         "code",
         "test"
       ]
+    },
+    {
+      "login": "vimutti77",
+      "name": "Vantroy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/27840664?v=4",
+      "profile": "https://github.com/vimutti77",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "LukaszGrela",
+      "name": "Lukasz Grela",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7643591?v=4",
+      "profile": "https://github.com/LukaszGrela",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

@@ -1,6 +1,6 @@
 {
   "name": "unimported",
-  "version": "1.20.2-internal",
+  "version": "1.29.2-internal",
   "description": "Scans your nodejs project folder and shows obsolete files and modules",
   "main": "./dist/index.js",
   "bin": {
@@ -32,11 +32,9 @@
     "bin"
   ],
   "keywords": [
-    "unrequired",
-    "redundant",
-    "obsolete",
-    "unimported",
-    "unreferenced"
+    "nodejs",
+    "cli",
+    "analysis"
   ],
   "dependencies": {
     "@typescript-eslint/parser": "^5.27.1",
@@ -50,7 +48,7 @@
     "ora": "^5.3.0",
     "read-pkg-up": "^7.0.1",
     "resolve": "^1.20.0",
-    "simple-git": "^3.7.1",
+    "simple-git": "^3.18.0",
     "term-size": "^2.2.1",
     "typescript": "^4.3.5",
     "yargs": "^16.2.0"
@@ -73,7 +71,7 @@
     "jest": "^26.6.3",
     "jest-in-case": "^1.0.2",
     "jest-partial": "^1.0.1",
-    "lint-staged": "^10.5.4",
+    "lint-staged": "^13.2.1",
     "nodemon": "^2.0.7",
     "patch-package": "^6.4.7",
     "pinst": "^2.1.6",
